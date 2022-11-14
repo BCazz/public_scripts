@@ -1,0 +1,19 @@
+Download Links:
+
+https://www.anaconda.com/
+https://www.postgresql.org/
+https://www.postgresql.org/ftp/odbc/versions/msi/
+https://www.pgadmin.org/download/
+https://git-scm.com/download/win
+https://desktop.github.com/
+https://www.sublimetext.com/
+
+Other Useful Sources:
+
+Package Control Sublime --> https://packagecontrol.io/
+Install Package Control Sublime 1 --> https://packagecontrol.io/installation
+Install Package Control Sublime 2 --> https://www.youtube.com/watch?v=rTY70beZOmo
+Git, GitHub, GitHub Desktop Overview --> https://www.youtube.com/watch?v=8Dd7KRpKeaE
+Postgres to Excel 1 --> https://www.youtube.com/watch?v=o2T7xdNZ3Qc
+Postgres to Excel 2 --> https://www.youtube.com/watch?v=z5DrJM7qsEk
+Remote Connection to PostgreSQL --> https://www.youtube.com/watch?v=4IhfbxhoAn8
