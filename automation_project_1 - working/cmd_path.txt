@@ -1,0 +1,15 @@
+if you want to change to a mapped drive use the above format in the command prompt to do so:
+
+
+cd /d Q:\DRIVE\FOLDER\SUBFOLDER\ETC
+
+
+
+
+if the drive is unmapped for example and looks like the below
+
+
+XXXXXXXXXXXXXXXXXXXXXXX
+
+
+then you can use the following format:
