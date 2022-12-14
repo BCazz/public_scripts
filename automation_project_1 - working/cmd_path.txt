@@ -4,12 +4,16 @@ if you want to change to a mapped drive use the above format in the command prom
 cd /d Q:\DRIVE\FOLDER\SUBFOLDER\ETC
 
 
+if the drive is unmapped (or a UNC path) for example and looks like the below
 
 
-if the drive is unmapped for example and looks like the below
-
-
-XXXXXXXXXXXXXXXXXXXXXXX
+\\bc-fps02\XXXXX\XXXXX
 
 
 then you can use the following format:
+
+
+pushd \\bc-fps02\XXXXX\XXXXX
+
+
+then apply popd to exit from the above specified path
