@@ -1,1 +1,0 @@
-cd C:\Users\bjcas\Documents\GitHub\public_scripts\automation_project_1\margin_scripts

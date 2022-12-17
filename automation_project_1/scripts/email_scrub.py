@@ -1,36 +1,36 @@
-import os as os
-import glob as glob
+import os
 import win32com.client as wincom
 
-def cutlass_email_scrub():
+print('processing...')
 
-	print('processing...')
+# creating a variable for the folder where want the excel file moved to
 
-	# setting a variable for the path to the folder to save the attachments in
+target_folder = "C:\\Users\\bjcas\\Documents\\GitHub\\public_scripts\\automation_project_1 - working\\inputs"
 
-	target_folder = "Q:\\Option Model\\PythonScripts\\MarginReports\\Inputs\\"
+print('connecting to outlook...')
 
-	# Connecting to outlook
+# connecting to outlook
 
-	outlook = wincom.Dispatch("Outlook.Application").GetNamespace("MAPI")
+outlook = wincom.Dispatch("Outlook.Application").GetNamespace("MAPI")
 
-	# Connecting to the inbox
+# connecting to inbox
 
-	inbox = outlook.Folders("bcasamassima@advancedpowerna.com").Folders("Cutlass Data")
+inbox = outlook.Folders("bcasamassima@casacode.com").Folders("auto_1")
 
-	# setting the message variable to iterate through
+print('pulling email attachement...')
 
-	emails = inbox.Items
+# setting emails as an item/object to be called on
 
-	email = emails.GetLast()
-	#email = emails.GetFirst()
+emails = inbox.Items
 
-	attachments = email.Attachments
+email = emails.GetLast()
 
-	attachment = attachments.Item(1)
+attachments = email.Attachments
 
-	attachment.SaveAsFile(os.path.join(target_folder,str(attachment)))
+attachment = attachments.Item(1)
 
-	print('completed')
+print('moving attachement to the inputs folder...')
 
-#cutlass_email_scrub()
+attachment.SaveAsFile(os.path.join(target_folder,str("data.xlsx")))
+
+# https://learn.microsoft.com/en-us/office/vba/api/overview/

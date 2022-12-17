@@ -1,20 +1,17 @@
-import os as os
-import glob as glob
-import win32com.client as wincom
+import os 
+import glob
 
-def file_delete():
+print('processing...')
 
-	print('processing...')
+os.chdir("C:\\Users\\bjcas\\Documents\\GitHub\\public_scripts\\automation_project_1 - working\\inputs")
 
-	os.chdir("Q:\\Option Model\\PythonScripts\\MarginReports\\Inputs")
+cwd = os.getcwd()
 
-	cwd = os.getcwd()
+files = glob.glob('*.xlsx')
 
-	cutlass_files = glob.glob('RT Energy*')
+for file in files:
+	os.remove(file)
 
-	for file in cutlass_files:
-		os.remove(file)
+print('file(s) deleted')
 
-	print('completed')
 
-#file_delete()

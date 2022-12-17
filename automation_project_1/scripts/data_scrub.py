@@ -1,199 +1,218 @@
-import pandas as pd 
-import numpy as np
-import os as os
+import requests
+import json
+import pandas as pd
 import datetime as dt
 import psycopg2 as pg2
 
 
-def data_scrub():
+print('processing...')
 
-	print('scrubbing data...')
+data_file = 'C:\\Users\\bjcas\\Documents\\GitHub\\public_scripts\\automation_project_1 - working\\inputs\\data.xlsx'
 
-	# creating data frames for each of the excel files
+# https://pandas.pydata.org/docs/reference/api/pandas.read_excel.html
+# https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html
 
-	inputs_folder_path = 'Q:\\Option Model\\GitHub\\advanced_power_repo\\margin_reports\\inputs\\'
+print('reading excel file...')
 
-	master_sheet = 'master_sheet.xlsx'
-	tenaska_file = 'RT Energy Imbalance.xlsx'
+df_revenue = pd.read_excel(data_file, sheet_name='Imbalance chart')
+df_generation = pd.read_excel(data_file, sheet_name='Settlement Volumes Chart')
 
-	master_sheet = os.path.join(inputs_folder_path, master_sheet)
-	tenaska_file = os.path.join(inputs_folder_path, tenaska_file)
+# https://requests.readthedocs.io/en/latest/
+# https://requests.readthedocs.io/en/latest/user/quickstart/#make-a-request
+# https://requests.readthedocs.io/en/latest/user/authentication/
 
-	df_revenue_data = pd.read_excel(tenaska_file, sheet_name = 'Imbalance chart')
-	df_generation_data = pd.read_excel(tenaska_file, sheet_name = 'Settlement Volumes Chart')
-	df_max_generation_data = pd.read_excel(tenaska_file, sheet_name = 'Settlement Volumes Chart')
-	df_power_data = pd.read_excel(master_sheet, sheet_name = 'ercot_raw')
+# https://www.youtube.com/watch?v=tb8gHvYlCFs
+# https://www.youtube.com/watch?v=fklHBWow8vE&t=1349s
 
-	# creating a clean data frame for the revenue data
+print('pulling api data...')
 
-	df_revenue_data = df_revenue_data.loc[:, ['FlowdayAndInterval (Year > Month > Day > Hour > Minute)','Amount - Credit Positive']]
+start_date = '2022-12-01'
+end_date = '2023-02-01'
 
-	# dropping any instance of tenaska summing the data
+url = f'https://ams.pharos-ei.com/api/ercot/lmp/historic/hourly?start_date={start_date}&end_date={end_date}&location_id=ROW_ALL,HB_HOUSTON'
+key = '6308505addb030a907bd1ZxSfq2W7wY6xfBHVspqM'
 
-	if df_revenue_data.iloc[0,0] == '(All)':
-		df_revenue_data = df_revenue_data.drop(0)
+df_power = requests.get(url,auth=(key,'*')).text
+df_power = json.loads(df_power)
+df_power = df_power['lmp']
+df_power = pd.DataFrame(df_power)
 
-	df_revenue_data['date'] = pd.to_datetime(df_revenue_data['FlowdayAndInterval (Year > Month > Day > Hour > Minute)'], format = '%Y-%m-%d %X', utc = False)
-	df_revenue_data['date'] = df_revenue_data['date'].dt.strftime('%Y-%m-%d')
-	df_revenue_data = df_revenue_data.groupby(['date']).sum()
+# cleaning up revenue data
+# pulling out only desired columns
 
-	# creating a clean data frame for the generation data
+print('cleaning revenue data...')
 
-	df_generation_data = df_generation_data.loc[:, ['FlowdayAndInterval (Year > Month > Day > Hour > Minute)','ENT_Telemetered_Output']]
-	
-	# dropping any instance of tenaska summing the data
+df_revenue = df_revenue.loc[:,['FlowdayAndInterval (Year > Month > Day > Hour > Minute)','Amount - Credit Positive']]
 
-	if df_generation_data.iloc[0,0] == '(All)':
-		df_generation_data = df_generation_data.drop(0)
+if df_revenue.iloc[0,0] =='(All)':
+	df_revenue = df_revenue.drop(0)
+else:
+	pass
 
-	df_generation_data['date'] = pd.to_datetime(df_generation_data['FlowdayAndInterval (Year > Month > Day > Hour > Minute)'], format = '%Y-%m-%d %X', utc = False)
-	df_generation_data['date'] = df_generation_data['date'].dt.strftime('%Y-%m-%d')
-	df_generation_data = df_generation_data.groupby(['date']).sum()
+# https://dataindependent.com/pandas/pandas-to-datetime-string-to-date-pd-to_datetime/
 
-	# creating a clean data frame for the day's max generation data
+df_revenue['date'] = pd.to_datetime(df_revenue['FlowdayAndInterval (Year > Month > Day > Hour > Minute)'], format='%Y-%m-%d %X')
+df_revenue['date'] = df_revenue['date'].dt.strftime('%Y-%m-%d')
+df_revenue = df_revenue.groupby('date', as_index=False).sum()
 
-	df_max_generation_data = df_max_generation_data.loc[:, ['FlowdayAndInterval (Year > Month > Day > Hour > Minute)','ENT_Telemetered_Output']]
+print('cleaning generation data...')
 
-	# dropping any instance of tenaska summing the data
+# cleaning up generation data
 
-	if df_max_generation_data.iloc[0,0] == '(All)':
-		df_max_generation_data = df_max_generation_data.drop(0)
+df_generation = df_generation.loc[:,['FlowdayAndInterval (Year > Month > Day > Hour > Minute)','ENT_Telemetered_Output']]
 
-	df_max_generation_data['date'] = pd.to_datetime(df_max_generation_data['FlowdayAndInterval (Year > Month > Day > Hour > Minute)'], format = '%Y-%m-%d %X', utc = False)
-	df_max_generation_data['date'] = df_max_generation_data['date'].dt.strftime('%Y-%m-%d')
-	df_max_generation_data['gen_max'] = df_max_generation_data.groupby('date')['ENT_Telemetered_Output'].transform('max')
-	df_max_generation_data = df_max_generation_data.groupby(['date']).mean()
+if df_generation.iloc[0,0] =='(All)':
+	df_generation = df_generation.drop(0)
+else:
+	pass
 
-	# filtering df_power_data for the relevant hub and node pricing data 
+df_generation['date'] = pd.to_datetime(df_generation['FlowdayAndInterval (Year > Month > Day > Hour > Minute)'], format='%Y-%m-%d %X')
+df_generation['date'] = df_generation['date'].dt.strftime('%Y-%m-%d')
 
-	df_houston_hub = df_power_data.loc[df_power_data.location == 'HB_HOUSTON', ['date','timestamp','rt_lmp']]
-	df_rowland = df_power_data.loc[df_power_data.location == 'ROW_ALL', ['date','timestamp','rt_lmp']]
+df_generation_max = df_generation
+df_generation_max['gen_max'] = df_generation_max.groupby('date')['ENT_Telemetered_Output'].transform('max')
+df_generation_max = df_generation_max.groupby('date', as_index=False).mean()
 
-	# clearing date issue
+df_generation = df_generation.groupby('date', as_index=False).sum()
 
-	df_houston_hub['time'] = pd.to_datetime(df_houston_hub['timestamp'], format = '%Y-%m-%dT%H:%M:%S.%f%z', utc = True)
-	df_houston_hub['time'] = df_houston_hub['time'].dt.tz_convert('US/Eastern')
-	df_houston_hub['time'] = df_houston_hub['time'].dt.tz_localize(None)
-	df_houston_hub['time'] = df_houston_hub['time'].dt.strftime('%Y-%m-%d %X')
+print('cleaning power data...')
 
-	df_houston_hub['date'] = pd.to_datetime(df_houston_hub['date'])
+# cleaning up power data
 
-	# creating a data frame of the clean data aggregated to be pulled from later
+df_houston = df_power.loc[df_power.location == 'HB_HOUSTON',['date','timestamp','rt_lmp']]	
+df_row = df_power.loc[df_power.location == 'ROW_ALL',['date','timestamp','rt_lmp']]
 
-	df_power_hourly = pd.DataFrame()
+df_houston['time'] = pd.to_datetime(df_houston['timestamp'], format='%Y-%m-%dT%X.%f%z', utc = True)
+df_houston['time'] = df_houston['time'].dt.tz_convert('US/Central')
+df_houston['time'] = df_houston['time'].dt.tz_localize(None)
+df_houston['time'] = df_houston['time'].dt.strftime('%Y-%m-%d %X')
 
-	df_power_hourly['date'] = df_houston_hub['date'].values
-	df_power_hourly['time'] = df_houston_hub['time'].values
-	df_power_hourly['houston_hub_lmp'] = df_houston_hub.loc[:,'rt_lmp'].values
-	df_power_hourly['rowland_lmp'] = df_rowland['rt_lmp'].values
-	df_power_hourly['rowland_basis'] = df_power_hourly['rowland_lmp'] - df_power_hourly['houston_hub_lmp']
+df_houston['date'] = pd.to_datetime(df_houston['date'])
 
-	df_power_min = df_power_hourly
-	df_power_min['rowland_lmp_min'] = df_power_hourly.groupby('date')['rowland_lmp'].transform('min')
-	df_power_min = df_power_min.groupby(['date']).mean()
+# creating a new dataframe to have all the hourly power data desired
 
-	df_power_max = df_power_hourly
-	df_power_max['rowland_lmp_max'] = df_power_hourly.groupby('date')['rowland_lmp'].transform('max') 
-	df_power_max = df_power_max.groupby(['date']).mean()
+df_power_hourly = pd.DataFrame()
 
-	# creating master dataframes that are database ready
+df_power_hourly['date'] = df_houston['date'].values
+df_power_hourly['time'] = df_houston['time'].values
+df_power_hourly['houston_hub_lmp'] = df_houston['rt_lmp'].values
+df_power_hourly['rowland_lmp'] = df_row['rt_lmp'].values
+df_power_hourly['rowland_basis'] = df_power_hourly['rowland_lmp'] - df_power_hourly['houston_hub_lmp']
 
-	df_cutlass_margin = pd.DataFrame()
+df_power_min = df_power_hourly
+df_power_min['rowland_lmp_min'] = df_power_min.groupby('date')['rowland_lmp'].transform('min')
+df_power_min = df_power_min.groupby('date').mean()
 
-	df_cutlass_margin['date'] = pd.Series(df_power_hourly.loc[::24,'date'].values)
-	df_cutlass_margin['gen_revenue'] = pd.Series(df_revenue_data['Amount - Credit Positive'].values) 
-	df_cutlass_margin['gen_mw'] = pd.Series(df_generation_data['ENT_Telemetered_Output'].values)
-	df_cutlass_margin['gen_mw_max'] = pd.Series(df_max_generation_data['gen_max'].values)
-	df_cutlass_margin['rowland_lmp_min'] = pd.Series(df_power_min['rowland_lmp_min'].values)
-	df_cutlass_margin['rowland_lmp_realized'] = pd.Series(df_cutlass_margin['gen_revenue'].values) / pd.Series(df_cutlass_margin['gen_mw'].values)
-	df_cutlass_margin['rowland_lmp_max'] = pd.Series(df_power_max['rowland_lmp_max'].values)
-	df_cutlass_margin['rowland_basis'] = pd.Series(df_power_hourly.groupby(['date'])['rowland_basis'].mean().values)
+df_power_max = df_power_hourly
+df_power_max['rowland_lmp_max'] = df_power_max.groupby('date')['rowland_lmp'].transform('max')
+df_power_max = df_power_max.groupby('date').mean()
 
-	# exporting data frames to a csv files that can be imported into postgres sql
+print('compiling data into a master dataframe...')
 
-	df_cutlass_margin.to_csv('Q:\\Option Model\\GitHub\\advanced_power_repo\\margin_reports\\outputs\\cutlass_margin_temp.csv', index = False, encoding='utf-8')
+# creating master dataframes that are database ready
 
-	# connecting to the postgres database & creating a cursor
+df_master = pd.DataFrame()
 
-	conn = pg2.connect(database='ap_am_db',user='postgres',password='Bcazz1', host = '10.113.30.149')
-	cur = conn.cursor()
+df_master['date'] = pd.Series(df_revenue['date'].values)
+df_master['gen_revenue'] =  pd.Series(df_revenue['Amount - Credit Positive'].values)
+df_master['gen_mw'] = pd.Series(df_generation['ENT_Telemetered_Output'].values)
+df_master['gen_mw_max'] = pd.Series(df_generation_max['gen_max'].values)
+df_master['lmp_min'] = pd.Series(df_power_min['rowland_lmp_min'].values)
+df_master['lmp_realized'] = pd.Series(df_master['gen_revenue'] / df_master['gen_mw'].values)
+df_master['lmp_max'] = pd.Series(df_power_max['rowland_lmp_max'].values)
+df_master['basis'] = pd.Series(df_power_hourly.groupby('date')['rowland_basis'].mean().values)
 
-	# drop any previous existence of the temporary table that will be used to upsert the margin report data into the database
+# exporting the df_master dataframe to a csv that be upserted into SQL
 
-	cur.execute('DROP TABLE IF EXISTS z_cutlass_margin_temp;')
-	
-	# create a temporary sql table that will be used to upsert the data in df_cce_margin_db into the primary database
+print('exporting to csv...')
 
-	cur.execute("""CREATE TABLE z_cutlass_margin_temp(
-		date TIMESTAMP,
-		gen_revenue NUMERIC,
-		gen_mw NUMERIC,
-		gen_mw_max NUMERIC,
-		rowland_lmp_min NUMERIC,
-		rowland_lmp_realized NUMERIC,
-		rowland_lmp_max NUMERIC,
-		rowland_basis NUMERIC,
-		PRIMARY KEY (date)
-	);""")
+# https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_csv.html
 
-	# uploading df_cutlass_margin to the z_cutlass_margin_temp table in the database
+df_master.to_csv('C:\\Users\\bjcas\\Documents\\GitHub\\public_scripts\\automation_project_1 - working\\outputs\\final_data.csv', index = False, encoding = 'utf-8')
 
-	cutlass_margin_temp_file = open('Q:\\Option Model\\GitHub\\advanced_power_repo\\margin_reports\\outputs\\cutlass_margin_temp.csv')
+# https://www.psycopg.org/docs/
 
-	import_margin = """
-	COPY z_cutlass_margin_temp FROM STDIN WITH
-		CSV
-		HEADER
-		DELIMITER AS ','
-	"""
-	cur.copy_expert(sql=import_margin, file=cutlass_margin_temp_file)
+print('connecting to database...')
 
-	# upsert cutlass_margin_temp into cutlass_margin
+# create a connection and cursor
 
-	upsert_margin = """
-		INSERT INTO cutlass_margin(date,gen_revenue,gen_mw,gen_mw_max,rowland_lmp_min,rowland_lmp_realized,rowland_lmp_max,rowland_basis)
-  			SELECT z_cutlass_margin_temp.date,
-         	       z_cutlass_margin_temp.gen_revenue,
-        	       z_cutlass_margin_temp.gen_mw,
-        	       z_cutlass_margin_temp.gen_mw_max,
-        	       z_cutlass_margin_temp.rowland_lmp_min,
-        	       z_cutlass_margin_temp.rowland_lmp_realized,
-        	       z_cutlass_margin_temp.rowland_lmp_max,
-        	       z_cutlass_margin_temp.rowland_basis
-        
-			FROM ( SELECT
-         	       z_cutlass_margin_temp.date,
-         	       z_cutlass_margin_temp.gen_revenue,
-        	       z_cutlass_margin_temp.gen_mw,
-        	       z_cutlass_margin_temp.gen_mw_max,
-        	       z_cutlass_margin_temp.rowland_lmp_min,
-        	       z_cutlass_margin_temp.rowland_lmp_realized,
-        	       z_cutlass_margin_temp.rowland_lmp_max,
-        	       z_cutlass_margin_temp.rowland_basis
-			       FROM z_cutlass_margin_temp
-			 ) z_cutlass_margin_temp
-		
-			ON CONFLICT(date)
-		
-			DO UPDATE SET
-			        gen_revenue = EXCLUDED.gen_revenue,
-			        gen_mw = EXCLUDED.gen_mw,
-			        gen_mw_max = EXCLUDED.gen_mw_max,
-			        rowland_lmp_min = EXCLUDED.rowland_lmp_min,
-			        rowland_lmp_realized = EXCLUDED.rowland_lmp_realized,
-			        rowland_lmp_max = EXCLUDED.rowland_lmp_max,
-			        rowland_basis = EXCLUDED.rowland_basis;
-	"""
+conn = pg2.connect(database='automation_projects',user='postgres',password='XXXX',host = '127.0.0.1')
+cur = conn.cursor()
 
-	cur.execute(upsert_margin)
+# drop any existence of the temporary table used to upset data into the database
 
-	cur.execute('GRANT SELECT ON TABLE cutlass_margin TO PUBLIC')
-	conn.commit()
+cur.execute('DROP TABLE IF EXISTS z_auto_project_1;')
 
-	# closing connection to the database
+# create a temporary sql table that will be used to upsert the data into the primary table
 
-	cur = conn.close()
+cur.execute("""CREATE TABLE z_auto_project_1(
+	date TIMESTAMP,
+	gen_revenue NUMERIC,
+	gen_mw NUMERIC,
+	gen_mw_max NUMERIC,
+	lmp_min NUMERIC,
+	lmp_realized NUMERIC,
+	lmp_max NUMERIC,
+	basis NUMERIC,
+	PRIMARY KEY (date)
+);""")
 
-	print('cutlass margin and settlements data scrubbed')
+# upload the csv to the z_auto.. table in the database
 
-#cutlass_margin_report()
+project_1_file = open('C:\\Users\\bjcas\\Documents\\GitHub\\public_scripts\\automation_project_1 - working\\outputs\\final_data.csv')
+
+import_data = """
+COPY z_auto_project_1 FROM STDIN WITH
+	CSV
+	HEADER
+	DELIMITER AS ','
+"""
+
+cur.copy_expert(sql=import_data,file=project_1_file)
+
+print('upserting data...')
+
+# upserting temp table into the primary table
+
+upsert = """
+	INSERT INTO auto_project_1(date,gen_revenue,gen_mw,gen_mw_max,lmp_min,lmp_realized,lmp_max,basis)
+		SELECT  z_auto_project_1.date,
+				z_auto_project_1.gen_revenue,
+				z_auto_project_1.gen_mw,
+				z_auto_project_1.gen_mw_max,
+				z_auto_project_1.lmp_min,
+				z_auto_project_1.lmp_realized,
+				z_auto_project_1.lmp_max,
+				z_auto_project_1.basis
+
+		FROM ( SELECT
+				z_auto_project_1.date,
+				z_auto_project_1.gen_revenue,
+				z_auto_project_1.gen_mw,
+				z_auto_project_1.gen_mw_max,
+				z_auto_project_1.lmp_min,
+				z_auto_project_1.lmp_realized,
+				z_auto_project_1.lmp_max,
+				z_auto_project_1.basis
+				FROM z_auto_project_1
+		) z_auto_project_1
+
+		ON CONFLICT (date)
+
+		DO UPDATE SET
+			gen_revenue = EXCLUDED.gen_revenue,
+			gen_mw = EXCLUDED.gen_mw,
+			gen_mw_max = EXCLUDED.gen_mw_max,
+			lmp_min = EXCLUDED.lmp_min,
+			lmp_realized = EXCLUDED.lmp_realized,
+			lmp_max = EXCLUDED.lmp_max,
+			basis = EXCLUDED.basis;
+"""
+
+cur.execute(upsert)
+
+# committing the sql statements above
+
+conn.commit()
+
+print('program complete -- all data scrubbed and exported to database')
