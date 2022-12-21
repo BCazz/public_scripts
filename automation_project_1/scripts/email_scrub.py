@@ -5,7 +5,7 @@ print('processing...')
 
 # creating a variable for the folder where want the excel file moved to
 
-target_folder = "C:\\Users\\bjcas\\Documents\\GitHub\\public_scripts\\automation_project_1 - working\\inputs"
+target_folder = "C:\\Users\\bjcas\\Documents\\GitHub\\public_scripts\\automation_project_1\\inputs"
 
 print('connecting to outlook...')
 

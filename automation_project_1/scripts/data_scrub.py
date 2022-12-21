@@ -7,7 +7,7 @@ import psycopg2 as pg2
 
 print('processing...')
 
-data_file = 'C:\\Users\\bjcas\\Documents\\GitHub\\public_scripts\\automation_project_1 - working\\inputs\\data.xlsx'
+data_file = 'C:\\Users\\bjcas\\Documents\\GitHub\\public_scripts\\automation_project_1\\inputs\\data.xlsx'
 
 # https://pandas.pydata.org/docs/reference/api/pandas.read_excel.html
 # https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html
@@ -128,7 +128,7 @@ print('exporting to csv...')
 
 # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_csv.html
 
-df_master.to_csv('C:\\Users\\bjcas\\Documents\\GitHub\\public_scripts\\automation_project_1 - working\\outputs\\final_data.csv', index = False, encoding = 'utf-8')
+df_master.to_csv('C:\\Users\\bjcas\\Documents\\GitHub\\public_scripts\\automation_project_1\\outputs\\final_data.csv', index = False, encoding = 'utf-8')
 
 # https://www.psycopg.org/docs/
 
@@ -159,7 +159,7 @@ cur.execute("""CREATE TABLE z_auto_project_1(
 
 # upload the csv to the z_auto.. table in the database
 
-project_1_file = open('C:\\Users\\bjcas\\Documents\\GitHub\\public_scripts\\automation_project_1 - working\\outputs\\final_data.csv')
+project_1_file = open('C:\\Users\\bjcas\\Documents\\GitHub\\public_scripts\\automation_project_1\\outputs\\final_data.csv')
 
 import_data = """
 COPY z_auto_project_1 FROM STDIN WITH

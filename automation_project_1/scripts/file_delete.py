@@ -3,7 +3,7 @@ import glob
 
 print('processing...')
 
-os.chdir("C:\\Users\\bjcas\\Documents\\GitHub\\public_scripts\\automation_project_1 - working\\inputs")
+os.chdir("C:\\Users\\bjcas\\Documents\\GitHub\\public_scripts\\automation_project_1\\inputs")
 
 cwd = os.getcwd()
 
