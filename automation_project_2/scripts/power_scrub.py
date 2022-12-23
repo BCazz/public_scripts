@@ -10,8 +10,6 @@ print('scrubbing power data...')
 
 os.chdir("C:\\Users\\bjcas\\Documents\\GitHub\\public_scripts\\automation_project_2\\inputs\\")
 
-cwd = os.getcwd()
-
 files = glob.glob('icecleared_power*')
 
 for file in files:
@@ -186,6 +184,7 @@ for file in files:
 
 			DO UPDATE SET
 					trade_date = EXCLUDED.trade_date,
+					strip = EXCLUDED.strip,
 					ad_hub_on_peak = EXCLUDED.ad_hub_on_peak,
 					ad_hub_off_peak = EXCLUDED.ad_hub_off_peak,
 					zone_g_on_peak = EXCLUDED.zone_g_on_peak,
@@ -208,3 +207,5 @@ for file in files:
 	# committing the sql statements above
 
 	conn.commit()
+
+	print('power data scrubbed and stored in database...')
